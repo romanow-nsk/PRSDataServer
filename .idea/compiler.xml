@@ -7,9 +7,9 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="LEP500Core" />
+        <module name="EMCore" />
+        <module name="EMDataServer" />
         <module name="ABCCore" />
-        <module name="LEP500DataServer" />
         <module name="ABCDataServer" />
       </profile>
     </annotationProcessing>
