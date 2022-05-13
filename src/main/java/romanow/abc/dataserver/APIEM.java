@@ -1,9 +1,14 @@
 package romanow.abc.dataserver;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-
+import romanow.abc.core.constants.Values;
+import romanow.abc.core.constants.ValuesBase;
+import romanow.abc.core.entity.EntityLinkList;
+import romanow.abc.core.entity.EntityRefList;
+import romanow.abc.core.entity.baseentityes.JInt;
+import romanow.abc.core.entity.subjectarea.*;
+import romanow.abc.core.mongo.RequestStatistic;
+import spark.Request;
+import spark.Response;
 
 public class APIEM extends APIBase {
     private EMDataServer db;
@@ -11,7 +16,8 @@ public class APIEM extends APIBase {
     public APIEM(EMDataServer db0) {
         super(db0);
         db = db0;
-        //spark.Spark.post("/api/EM/measure/add", apiAddMeasure);
+        spark.Spark.post("/api/exam/group/add", apiAddGroupToExam);
+        spark.Spark.post("/api/exam/group/remove", apiRemoveGroupFromExam);
         //spark.Spark.post("/api/EM/analyse", apiAnalyse);
         //spark.Spark.post("/api/EM/measure/expertnote/set",apiSetExpertNote);
         //spark.Spark.get("/api/EM/measure/select",apiSelectMeasures);
@@ -19,6 +25,107 @@ public class APIEM extends APIBase {
         }
 
     //------------------------------------------------------------------------------------------------
+    RouteWrap apiAddGroupToExam = new RouteWrap() {
+        @Override
+        public Object _handle(Request req, Response res, RequestStatistic statistic) throws Exception {
+            ParamLong groupId = new ParamLong(req, res, "groupId");
+            if (!groupId.isValid()) return null;
+            ParamLong examId = new ParamLong(req, res, "examId");
+            EMExam exam = new EMExam();
+            if (!db.mongoDB.getById(exam,examId.getValue())){
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Экзамен id="+examId.getValue()+" не найден");
+                return null;
+                }
+            EMGroup group = new EMGroup();
+            if (!db.mongoDB.getById(group,groupId.getValue(),1)){
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Группа id="+groupId.getValue()+" не найдена");
+                return null;
+                }
+            EntityLinkList<EMGroup> groups = exam.getGroups();
+            groups.createMap();
+            if (groups.getById(groupId.getValue())!=null){
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Группа уже есть в экзамене");
+                return null;
+                }
+            EMDiscipline discipline = new EMDiscipline();
+            if (!db.mongoDB.getById(discipline,exam.getEMDiscipline().getOid())){
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Дисциплина id="+exam.getEMDiscipline().getOid()+" не найдена");
+                return null;
+                }
+            groups.add(groupId.getValue());
+            db.mongoDB.update(exam);
+            discipline.getGroups().add(groupId.getValue());
+            db.mongoDB.update(discipline);
+            int count=0;
+            for(EMStudent student : group.getStudents()){
+                if (student.getState()!= Values.StudentStateNormal)
+                    continue;
+                EMTicket ticket = new EMTicket();
+                ticket.setState(Values.TicketNotAllowed);
+                ticket.setExcerciceRating(0);
+                ticket.setSemesterRating(0);
+                ticket.setQuestionRating(0);
+                ticket.getStudent().setOid(student.getOid());
+                ticket.getEMExam().setOid(exam.getOid());
+                count++;
+                db.mongoDB.add(ticket);
+                }
+            return new JInt(count);
+            }
+        };
+    //------------------------------------------------------------------------------------------------
+    RouteWrap apiRemoveGroupFromExam = new RouteWrap() {
+        @Override
+        public Object _handle(Request req, Response res, RequestStatistic statistic) throws Exception {
+            ParamLong groupId = new ParamLong(req, res, "groupId");
+            if (!groupId.isValid()) return null;
+            ParamLong examId = new ParamLong(req, res, "examId");
+            EMExam exam = new EMExam();
+            if (!db.mongoDB.getById(exam,examId.getValue(),1)){
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Экзамен id="+examId.getValue()+" не найден");
+                return null;
+                }
+            EMGroup group = new EMGroup();
+            if (!db.mongoDB.getById(group,groupId.getValue(),1)){
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Группа id="+groupId.getValue()+" не найдена");
+                return null;
+                }
+            EntityLinkList<EMGroup> groups = exam.getGroups();
+            groups.createMap();
+            if (groups.getById(groupId.getValue())==null){
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Группа не найдена в экзамене");
+                return null;
+                }
+            EMDiscipline discipline = new EMDiscipline();
+            if (!db.mongoDB.getById(discipline,exam.getEMDiscipline().getOid())){
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Дисциплина id="+exam.getEMDiscipline().getOid()+" не найдена");
+                return null;
+                }
+            EntityRefList<EMStudent> students = group.getStudents();
+            students.createMap();
+            for(EMTicket ticket : exam.getTickets()){
+                if (students.getById(ticket.getStudent().getOid())==null)
+                    continue;
+                if (!ticket.enableToRemove()){
+                    db.createHTTPError(res, ValuesBase.HTTPRequestError, "Группа уже сдает экзамен (назначена)");
+                    return null;
+                    }
+                }
+            int count=0;
+            for(EMTicket ticket : exam.getTickets()) {
+                if (students.getById(ticket.getStudent().getOid()) == null)
+                    continue;
+                db.mongoDB.remove(ticket);
+                count++;
+                }
+            discipline.getGroups().createMap();
+            discipline.getGroups().removeById(groupId.getValue());
+            db.mongoDB.update(discipline);
+            groups.removeById(groupId.getValue());
+            db.mongoDB.update(exam);
+            return new JInt(count);
+            }
+        };
     /*
     public EntityList<Entity> getByCondition(Entity entity, String fname, String value, int level) throws UniException {
     List<BasicDBObject> obj = new ArrayList<BasicDBObject>();
