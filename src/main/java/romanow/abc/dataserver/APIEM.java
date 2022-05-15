@@ -1,6 +1,8 @@
 package romanow.abc.dataserver;
 
+import com.google.gson.Gson;
 import retrofit2.http.POST;
+import romanow.abc.core.DBRequest;
 import romanow.abc.core.Pair;
 import romanow.abc.core.UniException;
 import romanow.abc.core.constants.Values;
@@ -34,46 +36,51 @@ public class APIEM extends APIBase {
     RouteWrap apiStateChange = new RouteWrap() {
         @Override
         public Object _handle(Request req, Response res, RequestStatistic statistic) throws Exception {
-            ParamLong stateOid = new ParamLong(req, res, "stateOid");
-            if (!stateOid.isValid()) return null;
-            ParamString stateMashine = new ParamString(req, res, "stateMashine");
-            if (!stateMashine.isValid()) return null;
-            ParamString transition = new ParamString(req, res, "transition");
-            if (!transition.isValid()) return null;
-            TransitionsFactory factory = Values.stateFactoryMap.get(stateMashine.getValue());
+            ParamBody dbReq = new ParamBody(req, res, DBRequest.class);
+            if (!dbReq.isValid()) return null;
+            StateEntity entity = null;
+            DBRequest dbRequest = (DBRequest) dbReq.getValue();
+            try {
+                entity = (StateEntity) dbRequest.get(new Gson());
+                } catch (Exception ee){
+                    db.createHTTPError(res, ValuesBase.HTTPRequestError, "Ошибка создания объекта для автомата "+dbRequest.getClassName()+"\n"+ee.toString());
+                    return null;
+                    }
+            String stateClass = dbRequest.getClassName();
+            long oid = entity.getOid();
+            TransitionsFactory factory = Values.stateFactoryMap.get(stateClass);
             if (factory==null){
-                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Не найден автомат "+stateMashine.getValue());
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Не найден автомат "+stateClass);
                 return null;
                 }
-            Transition transition2 = factory.getByName(transition.getValue());
-            if (transition2==null){
-                if (factory==null){
-                    db.createHTTPError(res, ValuesBase.HTTPRequestError, "Не найдена функция перехода  "+transition.getValue());
+            Class clazz = Values.EntityFactory().getClassForSimpleName(stateClass);
+            if (clazz==null){
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Не найден класс для автомата  "+stateClass);
+                return null;
+                }
+            StateEntity oldEntity = (StateEntity)clazz.newInstance();
+            if (!db.mongoDB.getById(oldEntity,oid)){
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Не найден объект "+stateClass+" id="+oid);
+                return null;
+                }
+            Transition transition = factory.getByState(oldEntity.getState(),entity.getState());
+            if (transition==null){
+                if (transition==null){
+                    db.createHTTPError(res, ValuesBase.HTTPRequestError, "Не найдена функция перехода  "+oldEntity.getState()+"->"+entity.getState());
                     return null;
                     }
                 }
-            Class clazz = Values.EntityFactory().getClassForSimpleName(stateMashine.getValue());
-            if (clazz==null){
-                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Не найден класс для автомата  "+stateMashine.getValue());
-                return null;
-                }
-            Entity entity = (Entity)clazz.newInstance();
-            if (!db.mongoDB.getById(entity,stateOid.getValue())){
-                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Не найден объект "+stateMashine.getValue()+" id="+stateOid.getValue());
-                return null;
-                }
             try {
-                Class cls = Class.forName("romanow.abc.dataserver.statemashine."+factory.name+transition2.transName);
+                Class cls = Class.forName("romanow.abc.dataserver.statemashine."+factory.name+transition.transName);
                 I_ServerTransition transition1 = (I_ServerTransition) cls.newInstance();
                 String rez = transition1.onTransition(db,entity);
                 if (rez.length()!=0){
                     db.createHTTPError(res, ValuesBase.HTTPRequestError, rez);
                     return null;
                     }
-                ((I_State)entity).setState(transition2.nextState);          // ЭТО ДЛЯ ВСЕХ
                 db.mongoDB.update(entity);
                 }catch (Exception ee){
-                    db.createHTTPError(res, ValuesBase.HTTPRequestError, "Ошибка создания класса для автомата "+factory.name+transition2.transName+"n"+ee.toString());
+                    db.createHTTPError(res, ValuesBase.HTTPRequestError, "Ошибка создания класса для автомата "+factory.name+transition.transName+"n"+ee.toString());
                     return null;
                     }
             return new JEmpty();
