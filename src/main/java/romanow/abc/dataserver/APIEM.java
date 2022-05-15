@@ -1,13 +1,19 @@
 package romanow.abc.dataserver;
 
+import retrofit2.http.POST;
 import romanow.abc.core.Pair;
 import romanow.abc.core.UniException;
 import romanow.abc.core.constants.Values;
 import romanow.abc.core.constants.ValuesBase;
 import romanow.abc.core.entity.*;
+import romanow.abc.core.entity.baseentityes.JEmpty;
 import romanow.abc.core.entity.baseentityes.JInt;
+import romanow.abc.core.entity.baseentityes.JString;
 import romanow.abc.core.entity.subjectarea.*;
+import romanow.abc.core.entity.subjectarea.statemashine.Transition;
+import romanow.abc.core.entity.subjectarea.statemashine.TransitionsFactory;
 import romanow.abc.core.mongo.RequestStatistic;
+import romanow.abc.dataserver.statemashine.I_ServerTransition;
 import spark.Request;
 import spark.Response;
 
@@ -23,12 +29,56 @@ public class APIEM extends APIBase {
         spark.Spark.post("/api/exam/group/remove", apiRemoveGroupFromExam);
         spark.Spark.get("/api/exam/ticket/list", apiGetTicketsForExam);
         spark.Spark.get("/api/taking/ticket/list", apiGetTicketsForTaking);
-        //spark.Spark.post("/api/EM/analyse", apiAnalyse);
-        //spark.Spark.post("/api/EM/measure/expertnote/set",apiSetExpertNote);
-        //spark.Spark.get("/api/EM/measure/select",apiSelectMeasures);
-        //spark.Spark.post("/api/EM/measure/split", apiSplitMeasure);
-    }
-
+        spark.Spark.post("/api/state/change",apiStateChange);
+        }
+    RouteWrap apiStateChange = new RouteWrap() {
+        @Override
+        public Object _handle(Request req, Response res, RequestStatistic statistic) throws Exception {
+            ParamLong stateOid = new ParamLong(req, res, "stateOid");
+            if (!stateOid.isValid()) return null;
+            ParamString stateMashine = new ParamString(req, res, "stateMashine");
+            if (!stateMashine.isValid()) return null;
+            ParamString transition = new ParamString(req, res, "transition");
+            if (!transition.isValid()) return null;
+            TransitionsFactory factory = Values.stateFactoryMap.get(stateMashine.getValue());
+            if (factory==null){
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Не найден автомат "+stateMashine.getValue());
+                return null;
+                }
+            Transition transition2 = factory.getByName(transition.getValue());
+            if (transition2==null){
+                if (factory==null){
+                    db.createHTTPError(res, ValuesBase.HTTPRequestError, "Не найдена функция перехода  "+transition.getValue());
+                    return null;
+                    }
+                }
+            Class clazz = Values.EntityFactory().getClassForSimpleName(stateMashine.getValue());
+            if (clazz==null){
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Не найден класс для автомата  "+stateMashine.getValue());
+                return null;
+                }
+            Entity entity = (Entity)clazz.newInstance();
+            if (!db.mongoDB.getById(entity,stateOid.getValue())){
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Не найден объект "+stateMashine.getValue()+" id="+stateOid.getValue());
+                return null;
+                }
+            try {
+                Class cls = Class.forName("romanow.abc.dataserver.statemashine."+factory.name+transition2.transName);
+                I_ServerTransition transition1 = (I_ServerTransition) cls.newInstance();
+                String rez = transition1.onTransition(db,entity);
+                if (rez.length()!=0){
+                    db.createHTTPError(res, ValuesBase.HTTPRequestError, rez);
+                    return null;
+                    }
+                ((I_State)entity).setState(transition2.nextState);          // ЭТО ДЛЯ ВСЕХ
+                db.mongoDB.update(entity);
+                }catch (Exception ee){
+                    db.createHTTPError(res, ValuesBase.HTTPRequestError, "Ошибка создания класса для автомата "+factory.name+transition2.transName+"n"+ee.toString());
+                    return null;
+                    }
+            return new JEmpty();
+            }
+        };
     //------------------------------------------------------------------------------------------------
     RouteWrap apiAddGroupToExam = new RouteWrap() {
         @Override
@@ -36,11 +86,12 @@ public class APIEM extends APIBase {
             ParamLong groupId = new ParamLong(req, res, "groupId");
             if (!groupId.isValid()) return null;
             ParamLong examId = new ParamLong(req, res, "examId");
+            if (!examId.isValid()) return null;
             EMExam exam = new EMExam();
             if (!db.mongoDB.getById(exam, examId.getValue())) {
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Экзамен id=" + examId.getValue() + " не найден");
                 return null;
-            }
+                }
             EMGroup group = new EMGroup();
             if (!db.mongoDB.getById(group, groupId.getValue(), 1)) {
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Группа id=" + groupId.getValue() + " не найдена");
@@ -85,6 +136,7 @@ public class APIEM extends APIBase {
             ParamLong groupId = new ParamLong(req, res, "groupId");
             if (!groupId.isValid()) return null;
             ParamLong examId = new ParamLong(req, res, "examId");
+            if (!examId.isValid()) return null;
             EMExam exam = new EMExam();
             if (!db.mongoDB.getById(exam, examId.getValue(), 1)) {
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Экзамен id=" + examId.getValue() + " не найден");
