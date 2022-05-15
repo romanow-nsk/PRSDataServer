@@ -137,11 +137,11 @@ public class APIEM extends APIBase {
         if (!db.mongoDB.getById(exam,oid))
             throw UniException.user("Не найден экзамен id="+oid);
         EntityRefList<EMStudent> out = new EntityRefList<>();
-        for(EntityLink<EMGroup> groupId : exam.getGroups()){
-            EMGroup group = new EMGroup();
-            if (!db.mongoDB.getById(group,groupId.getOid(),2))
+        for(EntityLink<EMGroup> group : exam.getGroups()){
+            EMGroup group2 = new EMGroup();
+            if (!db.mongoDB.getById(group2,group.getOid(),2))
                 throw UniException.user("Не найдена группа id="+oid);
-            for(Entity entity : group.getStudents())
+            for(Entity entity : group2.getStudents())
                 out.add((EMStudent)entity);
             }
         out.createMap();
@@ -153,6 +153,8 @@ public class APIEM extends APIBase {
         public Object _handle(Request req, Response res, RequestStatistic statistic) throws Exception {
             ParamLong examId = new ParamLong(req, res, "examId");
             if (!examId.isValid()) return null;
+            ParamLong groupId = new ParamLong(req, res, "groupId");
+            if (!groupId.isValid()) return null;
             try {
                 EntityRefList<EMStudent> students = getStudentsForExam(examId.getValue());
                 EMExam exam = new EMExam();
@@ -160,14 +162,20 @@ public class APIEM extends APIBase {
                     db.createHTTPError(res, ValuesBase.HTTPRequestError, "Экзамен id=" + examId.getValue() + " не найден");
                     return null;
                     }
-                for(EMTicket ticket : exam.getTickets()){
+                for(int i=0;i<exam.getTickets().size();i++){
+                    EMTicket ticket = exam.getTickets().get(i);
                     EMStudent student = students.getById(ticket.getStudent().getOid());
                     if (student==null){
                         db.createHTTPError(res, ValuesBase.HTTPRequestError, "Экзамен id=" + ticket.getStudent().getOid() + " не найден");
                         return null;
                         }
-                    ticket.getStudent().setOidRef(student);
-                    }
+                    if (groupId.getValue()!=0 && student.getEMGroup().getOid()!=groupId.getValue()){
+                        exam.getTickets().remove(i);
+                        i--;
+                        }
+                    else
+                        ticket.getStudent().setOidRef(student);
+                        }
                 return exam;
                 } catch (UniException ee){
                     db.createHTTPError(res, ValuesBase.HTTPRequestError, ee.toString());
