@@ -28,6 +28,7 @@ public class APIEM extends APIBase {
         spark.Spark.get("/api/rating/group/get", apiGetGroupRatings);
         spark.Spark.get("/api/rating/taking/get", apiGetTakingRatings);
         spark.Spark.post("/api/state/change",apiStateChange);
+        spark.Spark.post("/api/rating/takingforall", apiSetTakingForAll);
         }
     RouteWrap apiStateChange = new RouteWrap() {
         @Override
@@ -185,6 +186,39 @@ public class APIEM extends APIBase {
                 }
         };
     //------------------------------------------------------------------------------------------------
+    RouteWrap apiSetTakingForAll = new RouteWrap() {
+        @Override
+        public Object _handle(Request req, Response res, RequestStatistic statistic) throws Exception {
+            ParamLong takingId = new ParamLong(req, res, "takingId");
+            if (!takingId.isValid()) return null;
+            EMExamTaking taking = new EMExamTaking();
+            if (!db.mongoDB.getById(taking, takingId.getValue(), 1)) {
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Прием экзамена  id=" + takingId.getValue() + " не найден");
+                return null;
+                }
+            EMDiscipline discipline = new EMDiscipline();
+            if (!db.mongoDB.getById(discipline, taking.getEMDiscipline().getOid(),1)) {
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Дисциплина id=" + taking.getEMDiscipline().getOid() + " не найдена");
+                return null;
+                }
+            discipline.createMaps();
+            int count=0;
+            for(EMGroupRating rating : discipline.getRatings()){
+                if (taking.isOneGroup() && taking.getGroup().getOid()!=rating.getGroup().getOid())
+                    continue;
+                db.mongoDB.getById(rating,rating.getOid(),1);
+                for(EMStudRating studRating : rating.getRatings())
+                    if (studRating.getState()==Values.StudRatingAllowed){
+                        studRating.setState(Values.StudRatingTakingSet);
+                        studRating.getEMExamTaking().setOid(taking.getOid());
+                        db.mongoDB.update(studRating);
+                        count++;
+                    }
+                }
+            return new JInt(count);
+            }
+        };
+    //------------------------------------------------------------------------------------------------
     RouteWrap apiGetGroupRatings = new RouteWrap() {
         @Override
         public Object _handle(Request req, Response res, RequestStatistic statistic) throws Exception {
@@ -226,7 +260,7 @@ public class APIEM extends APIBase {
                 }
             for (EMStudRating ticket : examTaking.getRatings()) {
                 EMStudent student = new EMStudent();
-                if (!db.mongoDB.getById(student,ticket.getStudent().getOid()))
+                if (!db.mongoDB.getById(student,ticket.getStudent().getOid(),1))
                 if (student == null) {
                     db.createHTTPError(res, ValuesBase.HTTPRequestError, "Студент id=" + ticket.getStudent().getOid() + " не найден");
                     return null;
