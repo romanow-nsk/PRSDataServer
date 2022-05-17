@@ -40,9 +40,12 @@ public class EMStudRatingConfirmation implements I_ServerTransition {
                 EMTask task = theme.getTasks().get(idx2);
                 if (task.getType()!= Values.TaskExercise)
                     continue;
+                if (taskMap.get(task.getOid())!=null)
+                    continue;
                 EMAnswer answer = new EMAnswer();
                 answer.getEMStudRating().setOid(rating.getOid());
                 answer.getTask().setOid(task.getOid());
+                taskMap.put(task.getOid(),task.getOid());
                 long oid = db.mongoDB().add(answer);
                 sum-=defBall;
                 }
@@ -55,9 +58,12 @@ public class EMStudRatingConfirmation implements I_ServerTransition {
                 EMTask task = theme.getTasks().get(idx2);
                 if (task.getType()!= Values.TaskQuestion)
                     continue;
+                if (taskMap.get(task.getOid())!=null)
+                    continue;
                 EMAnswer answer = new EMAnswer();
                 answer.getEMStudRating().setOid(rating.getOid());
                 answer.getTask().setOid(task.getOid());
+                taskMap.put(task.getOid(),task.getOid());
                 long oid = db.mongoDB().add(answer);
                 sum-=defBall;
                 }
