@@ -2,7 +2,6 @@ package romanow.abc.dataserver;
 
 import com.google.gson.Gson;
 import romanow.abc.core.DBRequest;
-import romanow.abc.core.UniException;
 import romanow.abc.core.constants.Values;
 import romanow.abc.core.constants.ValuesBase;
 import romanow.abc.core.entity.*;
@@ -87,28 +86,28 @@ public class APIEM extends APIBase {
     RouteWrap apiAddGroupRating = new RouteWrap() {
         @Override
         public Object _handle(Request req, Response res, RequestStatistic statistic) throws Exception {
-            ParamBody groupRating = new ParamBody(req, res, EMGroupRating.class);
+            ParamBody groupRating = new ParamBody(req, res, SAGroupRating.class);
             if (!groupRating.isValid()) return null;
-            EMGroupRating rating = (EMGroupRating)groupRating.getValue();
+            SAGroupRating rating = (SAGroupRating)groupRating.getValue();
             long groupId = rating.getGroup().getOid();
-            long ruleId = rating.getRule().getOid();
+            long ruleId = rating.getExamRule().getOid();
             long discId = rating.getEMDiscipline().getOid();
-            EMGroup group = new EMGroup();
+            SAGroup group = new SAGroup();
             if (!db.mongoDB.getById(group,groupId,2)){
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Группа id=" + groupId + " не найдена");
                 return null;
                 }
-            EMExamRule rule = new EMExamRule();
+            SAExamRule rule = new SAExamRule();
             if (!db.mongoDB.getById(rule,ruleId)){
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Регламент id=" + ruleId + " не найден");
                 return null;
                 }
-            EMDiscipline discipline = new EMDiscipline();
+            SADiscipline discipline = new SADiscipline();
             if (!db.mongoDB.getById(discipline,discId,1)){
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Дисциплина id=" + discId + " не найдена");
                 return null;
                 }
-            for(EMGroupRating groupRating1 : discipline.getRatings()){
+            for(SAGroupRating groupRating1 : discipline.getRatings()){
                 if (groupRating1.getGroup().getOid()==groupId){
                     db.createHTTPError(res, ValuesBase.HTTPRequestError, "Повторное добавление рейтинга дисциплина-группа");
                     return null;
@@ -121,10 +120,10 @@ public class APIEM extends APIBase {
             rating.setName(discipline.getName()+"-"+group.getName());
             long oid = db.mongoDB.add(rating);
             int count = 0;
-            for (EMStudent student : group.getStudents()) {
+            for (SAStudent student : group.getStudents()) {
                 if (student.getState() != Values.StudentStateNormal)
                     continue;
-                EMStudRating ticket = new EMStudRating();
+                SAStudRating ticket = new SAStudRating();
                 ticket.setState(Values.StudRatingNotAllowed);
                 ticket.setExcerciceRating(0);
                 ticket.setSemesterRating(0);
@@ -143,30 +142,30 @@ public class APIEM extends APIBase {
         public Object _handle(Request req, Response res, RequestStatistic statistic) throws Exception {
             ParamLong ratingId = new ParamLong(req, res, "ratingId");
             if (!ratingId.isValid()) return null;
-            EMGroupRating rating = new EMGroupRating();
+            SAGroupRating rating = new SAGroupRating();
             if (!db.mongoDB.getById(rating, ratingId.getValue(), 1)) {
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Рейтинг группы  id=" + ratingId.getValue() + " не найден");
                 return null;
                 }
-            EMGroup group = new EMGroup();
+            SAGroup group = new SAGroup();
             if (!db.mongoDB.getById(group, rating.getGroup().getOid(), 1)) {
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Группа id=" + rating.getGroup().getOid() + " не найдена");
                 return null;
                 }
-            EMDiscipline discipline = new EMDiscipline();
+            SADiscipline discipline = new SADiscipline();
             if (!db.mongoDB.getById(discipline, rating.getEMDiscipline().getOid(), 1)) {
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Дисциплина id=" + rating.getEMDiscipline().getOid() + " не найдена");
                 return null;
                 }
-            for(EMExamTaking taking : discipline.getTakings()){
+            for(SAExamTaking taking : discipline.getTakings()){
                 if (taking.isOneGroup() && taking.getGroup().getOid()==group.getOid()){
                     db.createHTTPError(res, ValuesBase.HTTPRequestError, "Группа " + group.getName() + " назначена на экзамен");
                     return null;
                     }
                 }
-            EntityRefList<EMStudent> students = group.getStudents();
+            EntityRefList<SAStudent> students = group.getStudents();
             students.createMap();
-            for (EMStudRating ticket : rating.getRatings()) {
+            for (SAStudRating ticket : rating.getRatings()) {
                 if (students.getById(ticket.getStudent().getOid()) == null)
                     continue;
                 if (!ticket.enableToRemove()) {
@@ -175,7 +174,7 @@ public class APIEM extends APIBase {
                     }
                 }
             int count = 0;
-            for (EMStudRating ticket : rating.getRatings()) {
+            for (SAStudRating ticket : rating.getRatings()) {
                 if (students.getById(ticket.getStudent().getOid()) == null)
                     continue;
                 db.mongoDB.remove(ticket);
@@ -191,23 +190,23 @@ public class APIEM extends APIBase {
         public Object _handle(Request req, Response res, RequestStatistic statistic) throws Exception {
             ParamLong takingId = new ParamLong(req, res, "takingId");
             if (!takingId.isValid()) return null;
-            EMExamTaking taking = new EMExamTaking();
+            SAExamTaking taking = new SAExamTaking();
             if (!db.mongoDB.getById(taking, takingId.getValue(), 1)) {
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Прием экзамена  id=" + takingId.getValue() + " не найден");
                 return null;
                 }
-            EMDiscipline discipline = new EMDiscipline();
+            SADiscipline discipline = new SADiscipline();
             if (!db.mongoDB.getById(discipline, taking.getEMDiscipline().getOid(),1)) {
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Дисциплина id=" + taking.getEMDiscipline().getOid() + " не найдена");
                 return null;
                 }
             discipline.createMaps();
             int count=0;
-            for(EMGroupRating rating : discipline.getRatings()){
+            for(SAGroupRating rating : discipline.getRatings()){
                 if (taking.isOneGroup() && taking.getGroup().getOid()!=rating.getGroup().getOid())
                     continue;
                 db.mongoDB.getById(rating,rating.getOid(),1);
-                for(EMStudRating studRating : rating.getRatings())
+                for(SAStudRating studRating : rating.getRatings())
                     if (studRating.getState()==Values.StudRatingAllowed){
                         studRating.setState(Values.StudRatingTakingSet);
                         studRating.getEMExamTaking().setOid(taking.getOid());
@@ -224,20 +223,20 @@ public class APIEM extends APIBase {
         public Object _handle(Request req, Response res, RequestStatistic statistic) throws Exception {
             ParamLong ratingId = new ParamLong(req, res, "ratingId");
             if (!ratingId.isValid()) return null;
-            EMGroupRating rating = new EMGroupRating();
+            SAGroupRating rating = new SAGroupRating();
             if (!db.mongoDB.getById(rating, ratingId.getValue(), 1)) {
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Рейтинг группы  id=" + ratingId.getValue() + " не найден");
                 return null;
                 }
-            EMGroup group = new EMGroup();
+            SAGroup group = new SAGroup();
             if (!db.mongoDB.getById(group, rating.getGroup().getOid(), 2)) {
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Группа id=" + rating.getGroup().getOid() + " не найдена");
                 return null;
                 }
-            EntityRefList<EMStudent> students = group.getStudents();
+            EntityRefList<SAStudent> students = group.getStudents();
             students.createMap();
-            for (EMStudRating ticket : rating.getRatings()) {
-                EMStudent student = students.getById(ticket.getStudent().getOid());
+            for (SAStudRating ticket : rating.getRatings()) {
+                SAStudent student = students.getById(ticket.getStudent().getOid());
                 if (student == null) {
                     db.createHTTPError(res, ValuesBase.HTTPRequestError, "Студент id=" + ticket.getStudent().getOid() + " не найден");
                     return null;
@@ -253,13 +252,13 @@ public class APIEM extends APIBase {
         public Object _handle(Request req, Response res, RequestStatistic statistic) throws Exception {
             ParamLong takingId = new ParamLong(req, res, "takingId");
             if (!takingId.isValid()) return null;
-            EMExamTaking examTaking = new EMExamTaking();
+            SAExamTaking examTaking = new SAExamTaking();
             if (!db.mongoDB.getById(examTaking,takingId.getValue(),1)){
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Прием экзамена id=" + takingId.getValue() + " не найден");
                 return null;
                 }
-            for (EMStudRating ticket : examTaking.getRatings()) {
-                EMStudent student = new EMStudent();
+            for (SAStudRating ticket : examTaking.getRatings()) {
+                SAStudent student = new SAStudent();
                 if (!db.mongoDB.getById(student,ticket.getStudent().getOid(),1))
                 if (student == null) {
                     db.createHTTPError(res, ValuesBase.HTTPRequestError, "Студент id=" + ticket.getStudent().getOid() + " не найден");

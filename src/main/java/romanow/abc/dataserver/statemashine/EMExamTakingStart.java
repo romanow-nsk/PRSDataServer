@@ -8,11 +8,11 @@ import romanow.abc.dataserver.DataServer;
 public class EMExamTakingStart implements I_ServerTransition {
     @Override
     public String onTransition(DataServer db, StateEntity entity) {
-        EMExamTaking taking = (EMExamTaking) entity;
+        SAExamTaking taking = (SAExamTaking) entity;
         try {
-            EMExamTaking taking2 = new EMExamTaking();
+            SAExamTaking taking2 = new SAExamTaking();
             db.mongoDB().getById(taking2, taking.getOid(), 1);
-            for(EMStudRating rating : taking2.getRatings()){
+            for(SAStudRating rating : taking2.getRatings()){
                 if (rating.getState()== Values.StudRatingTakingSet){
                     rating.setState(Values.StudRatingConfirmation);
                     db.mongoDB().update(rating);

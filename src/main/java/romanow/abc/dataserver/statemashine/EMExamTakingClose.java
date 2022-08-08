@@ -2,21 +2,21 @@ package romanow.abc.dataserver.statemashine;
 
 import romanow.abc.core.constants.Values;
 import romanow.abc.core.entity.StateEntity;
-import romanow.abc.core.entity.subjectarea.EMAnswer;
-import romanow.abc.core.entity.subjectarea.EMExamTaking;
-import romanow.abc.core.entity.subjectarea.EMStudRating;
+import romanow.abc.core.entity.subjectarea.SAAnswer;
+import romanow.abc.core.entity.subjectarea.SAExamTaking;
+import romanow.abc.core.entity.subjectarea.SAStudRating;
 import romanow.abc.dataserver.DataServer;
 
 public class EMExamTakingClose implements I_ServerTransition{
     @Override
     public String onTransition(DataServer db, StateEntity entity) {
         try {
-            EMExamTaking taking = (EMExamTaking) entity;
-            EMExamTaking full = new EMExamTaking();
+            SAExamTaking taking = (SAExamTaking) entity;
+            SAExamTaking full = new SAExamTaking();
             if (!db.mongoDB().getById(full,taking.getOid(),2)){
                 return "Ошибка чтения данных приема экзамена id="+taking.getTitle();
                 }
-            for(EMStudRating rating : full.getRatings()){
+            for(SAStudRating rating : full.getRatings()){
                 int stateStud = rating.getState();
                 if (stateStud == Values.StudRatingConfirmation){
                     rating.setState(Values.StudRatingNoConfirmation);
@@ -28,7 +28,7 @@ public class EMExamTakingClose implements I_ServerTransition{
                     continue;
                 rating.setState(Values.StudRatingGotRating);
                 db.mongoDB().update(rating);
-                for(EMAnswer answer : rating.getAnswers()){
+                for(SAAnswer answer : rating.getAnswers()){
                     int state = answer.getState();
                     if (!(state== Values.AnswerNoAck || state==Values.AnswerRatingIsSet)){
                         answer.setState(Values.AnswerRatingNotSet);

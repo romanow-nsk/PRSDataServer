@@ -10,23 +10,23 @@ import java.util.HashMap;
 public class EMStudRatingConfirmation implements I_ServerTransition {
     @Override
     public String onTransition(DataServer db, StateEntity entity) {
-        EMStudRating rating = (EMStudRating) entity;
+        SAStudRating rating = (SAStudRating) entity;
         try {
-            EMExamTaking taking = new EMExamTaking();
+            SAExamTaking taking = new SAExamTaking();
             if (!db.mongoDB().getById(taking, rating.getEMExamTaking().getOid())){
                 return "Не найден прием экзамена id="+rating.getEMExamTaking().getOid();
                 }
-            EMDiscipline discipline = new EMDiscipline();
+            SADiscipline discipline = new SADiscipline();
             if (!db.mongoDB().getById(discipline,taking.getEMDiscipline().getOid(),2))
                 return "Не найдена дисциплина id="+taking.getEMDiscipline().getOid();
             discipline.createMaps();
-            EMGroupRating groupRating = discipline.getRatings().getById(rating.getEMGroupRating().getOid());    // Рейтинг группы
+            SAGroupRating groupRating = discipline.getRatings().getById(rating.getEMGroupRating().getOid());    // Рейтинг группы
             if (groupRating==null){
                 return "Не найден рейтинг группы id="+rating.getEMGroupRating().getOid();
                 }
-            EMExamRule rule = discipline.getRules().getById(groupRating.getRule().getOid());
+            SAExamRule rule = discipline.getRules().getById(groupRating.getExamRule().getOid());
             if (rule==null){
-                return "Не найден регламент id="+groupRating.getRule().getOid();
+                return "Не найден регламент id="+groupRating.getExamRule().getOid();
                 }
             rating.getAnswers().clear();                        // TODO - надо бы утилизовать
             HashMap<Long,Long> taskMap = new HashMap<>();
@@ -35,15 +35,15 @@ public class EMStudRatingConfirmation implements I_ServerTransition {
             int defBall = rule.getOneExcerciceDefBall();
             while(sum>0){
                 int idx = (int)(Math.random()*rule.getThemes().size());
-                EMTheme theme = discipline.getThemes().getById(rule.getThemes().get(idx).getOid());
+                SATheme theme = discipline.getThemes().getById(rule.getThemes().get(idx).getOid());
                 int idx2 = (int)(Math.random()*theme.getTasks().size());
-                EMTask task = theme.getTasks().get(idx2);
+                SATask task = theme.getTasks().get(idx2);
                 if (task.getType()!= Values.TaskExercise)
                     continue;
                 if (taskMap.get(task.getOid())!=null)
                     continue;
-                EMAnswer answer = new EMAnswer();
-                answer.getEMStudRating().setOid(rating.getOid());
+                SAAnswer answer = new SAAnswer();
+                answer.getSAStudRating().setOid(rating.getOid());
                 answer.getTask().setOid(task.getOid());
                 taskMap.put(task.getOid(),task.getOid());
                 long oid = db.mongoDB().add(answer);
@@ -53,15 +53,15 @@ public class EMStudRatingConfirmation implements I_ServerTransition {
             defBall = rule.getOneQuestionDefBall();
             while(sum>0){
                 int idx = (int)(Math.random()*rule.getThemes().size());
-                EMTheme theme = discipline.getThemes().getById(rule.getThemes().get(idx).getOid());
+                SATheme theme = discipline.getThemes().getById(rule.getThemes().get(idx).getOid());
                 int idx2 = (int)(Math.random()*theme.getTasks().size());
-                EMTask task = theme.getTasks().get(idx2);
+                SATask task = theme.getTasks().get(idx2);
                 if (task.getType()!= Values.TaskQuestion)
                     continue;
                 if (taskMap.get(task.getOid())!=null)
                     continue;
-                EMAnswer answer = new EMAnswer();
-                answer.getEMStudRating().setOid(rating.getOid());
+                SAAnswer answer = new SAAnswer();
+                answer.getSAStudRating().setOid(rating.getOid());
                 answer.getTask().setOid(task.getOid());
                 taskMap.put(task.getOid(),task.getOid());
                 long oid = db.mongoDB().add(answer);
