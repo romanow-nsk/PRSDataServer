@@ -7,11 +7,13 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="EMCore" />
-        <module name="EMDataServer" />
+        <module name="PRSCore" />
         <module name="ABCCore" />
-        <module name="ABCDataServer" />
+        <module name="PRSDataServer" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="ABCDataServer" target="1.8" />
+    </bytecodeTargetLevel>
   </component>
 </project>

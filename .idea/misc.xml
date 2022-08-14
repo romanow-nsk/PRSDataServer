@@ -6,8 +6,7 @@
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/../../ABC/ABCCore/pom.xml" />
-        <option value="$PROJECT_DIR$/../../ABC/ABCDataServer/pom.xml" />
-        <option value="$PROJECT_DIR$/../LEP500Core/pom.xml" />
+        <option value="$PROJECT_DIR$/../PRSCore/pom.xml" />
       </list>
     </option>
   </component>
