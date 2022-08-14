@@ -14,13 +14,13 @@ import romanow.abc.core.constants.ValuesBase;
 import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 
-public class EMConsoleServer {
+public class PRSConsoleServer {
     protected I_DBTarget dbTarget;
     protected Class apiFace;
     private int lineCount=0;
     private String gblEncoding="";
     private boolean utf8;
-    private EMDataServer dataServer = new EMDataServer();
+    private PRSDataServer dataServer = new PRSDataServer();
     private I_ServerState serverBack = new I_ServerState() {
         @Override
         public void onStateChanged(ServerState serverState) {
@@ -38,12 +38,12 @@ public class EMConsoleServer {
                 System.out.println(""+dataServer.getServerState().getLastMailNumber());
         }
     };
-    public EMConsoleServer(){
+    public PRSConsoleServer(){
         Values.init();
         dbTarget = new DBExample();
         apiFace = RestAPIBase.class;
         }
-    public EMConsoleServer(I_DBTarget target, Class apiFace0){
+    public PRSConsoleServer(I_DBTarget target, Class apiFace0){
         apiFace = apiFace0;
         dbTarget = target;
         }
@@ -107,7 +107,7 @@ public class EMConsoleServer {
          if (args.length>=2)
             init = args[1];
          System.out.println("Порт="+port);
-         EMConsoleServer server = new EMConsoleServer();
+         PRSConsoleServer server = new PRSConsoleServer();
          server.startServer(Integer.parseInt(port),init);
         if(args.length==4){
             ValuesBase.env().superUser().setLoginPhone(args[2]);

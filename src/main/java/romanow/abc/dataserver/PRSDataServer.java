@@ -12,13 +12,13 @@ import romanow.abc.core.utils.Pair;
 import java.util.concurrent.TimeUnit;
 
 // AJAX посылает post, а браузер - get
-public class EMDataServer extends DataServer {
+public class PRSDataServer extends DataServer {
     public APIEM EMAPI = null;                       // API предметной области
     public ErrorCounter deviceErrors = new ErrorCounter();  // Счетчик повторных ошибок
     protected boolean shutdown=false;                       // Признак завершения работы
     private OwnDateTime lastDay = new OwnDateTime(false);// Время для фиксации смены дня
     //--------------------------------------------------------------------------------------------------------------
-    public EMDataServer(){}
+    public PRSDataServer(){}
     //---------------------------------------------------------------------------------------------------------
     public Pair<APIEM,String> startSecondClient(String ip, String port, String token) throws Exception {
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
@@ -41,7 +41,7 @@ public class EMDataServer extends DataServer {
         ErrorCounter rez =deviceErrors.onSuccess();
         }
     public static void main(String argv[]){
-        new EMDataServer();
+        new PRSDataServer();
         }
     //-----------------------------------------------------------------------------------------------------------------
     @Override

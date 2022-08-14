@@ -17,9 +17,9 @@ import spark.Request;
 import spark.Response;
 
 public class APIEM extends APIBase {
-    private EMDataServer db;
+    private PRSDataServer db;
 
-    public APIEM(EMDataServer db0) {
+    public APIEM(PRSDataServer db0) {
         super(db0);
         db = db0;
         spark.Spark.post("/api/rating/group/add", apiAddGroupRating);
