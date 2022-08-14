@@ -91,7 +91,7 @@ public class APIEM extends APIBase {
             SAGroupRating rating = (SAGroupRating)groupRating.getValue();
             long groupId = rating.getGroup().getOid();
             long ruleId = rating.getExamRule().getOid();
-            long discId = rating.getEMDiscipline().getOid();
+            long discId = rating.getSADiscipline().getOid();
             SAGroup group = new SAGroup();
             if (!db.mongoDB.getById(group,groupId,2)){
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Группа id=" + groupId + " не найдена");
@@ -113,7 +113,7 @@ public class APIEM extends APIBase {
                     return null;
                     }
                 }
-            if (rule.getEMDiscipline().getOid()!=discId){
+            if (rule.getSADiscipline().getOid()!=discId){
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Регламент "+rule.getName()+" не от дисциплины " + discipline.getName());
                 return null;
                 }
@@ -129,7 +129,7 @@ public class APIEM extends APIBase {
                 ticket.setSemesterRating(0);
                 ticket.setQuestionRating(0);
                 ticket.getStudent().setOid(student.getOid());
-                ticket.getEMGroupRating().setOid(oid);
+                ticket.getSAGroupRating().setOid(oid);
                 count++;
                 db.mongoDB.add(ticket);
                 }
@@ -153,8 +153,8 @@ public class APIEM extends APIBase {
                 return null;
                 }
             SADiscipline discipline = new SADiscipline();
-            if (!db.mongoDB.getById(discipline, rating.getEMDiscipline().getOid(), 1)) {
-                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Дисциплина id=" + rating.getEMDiscipline().getOid() + " не найдена");
+            if (!db.mongoDB.getById(discipline, rating.getSADiscipline().getOid(), 1)) {
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Дисциплина id=" + rating.getSADiscipline().getOid() + " не найдена");
                 return null;
                 }
             for(SAExamTaking taking : discipline.getTakings()){
@@ -196,8 +196,8 @@ public class APIEM extends APIBase {
                 return null;
                 }
             SADiscipline discipline = new SADiscipline();
-            if (!db.mongoDB.getById(discipline, taking.getEMDiscipline().getOid(),1)) {
-                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Дисциплина id=" + taking.getEMDiscipline().getOid() + " не найдена");
+            if (!db.mongoDB.getById(discipline, taking.getSADiscipline().getOid(),1)) {
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Дисциплина id=" + taking.getSADiscipline().getOid() + " не найдена");
                 return null;
                 }
             discipline.createMaps();
@@ -209,7 +209,7 @@ public class APIEM extends APIBase {
                 for(SAStudRating studRating : rating.getRatings())
                     if (studRating.getState()==Values.StudRatingAllowed){
                         studRating.setState(Values.StudRatingTakingSet);
-                        studRating.getEMExamTaking().setOid(taking.getOid());
+                        studRating.getSAExamTaking().setOid(taking.getOid());
                         db.mongoDB.update(studRating);
                         count++;
                     }

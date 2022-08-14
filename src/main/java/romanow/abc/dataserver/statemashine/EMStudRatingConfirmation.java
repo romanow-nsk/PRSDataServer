@@ -13,16 +13,16 @@ public class EMStudRatingConfirmation implements I_ServerTransition {
         SAStudRating rating = (SAStudRating) entity;
         try {
             SAExamTaking taking = new SAExamTaking();
-            if (!db.mongoDB().getById(taking, rating.getEMExamTaking().getOid())){
-                return "Не найден прием экзамена id="+rating.getEMExamTaking().getOid();
+            if (!db.mongoDB().getById(taking, rating.getSAExamTaking().getOid())){
+                return "Не найден прием экзамена id="+rating.getSAExamTaking().getOid();
                 }
             SADiscipline discipline = new SADiscipline();
-            if (!db.mongoDB().getById(discipline,taking.getEMDiscipline().getOid(),2))
-                return "Не найдена дисциплина id="+taking.getEMDiscipline().getOid();
+            if (!db.mongoDB().getById(discipline,taking.getSADiscipline().getOid(),2))
+                return "Не найдена дисциплина id="+taking.getSADiscipline().getOid();
             discipline.createMaps();
-            SAGroupRating groupRating = discipline.getRatings().getById(rating.getEMGroupRating().getOid());    // Рейтинг группы
+            SAGroupRating groupRating = discipline.getRatings().getById(rating.getSAGroupRating().getOid());    // Рейтинг группы
             if (groupRating==null){
-                return "Не найден рейтинг группы id="+rating.getEMGroupRating().getOid();
+                return "Не найден рейтинг группы id="+rating.getSAGroupRating().getOid();
                 }
             SAExamRule rule = discipline.getRules().getById(groupRating.getExamRule().getOid());
             if (rule==null){
