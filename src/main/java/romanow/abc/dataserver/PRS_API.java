@@ -16,10 +16,12 @@ import romanow.abc.dataserver.statemashine.I_ServerTransition;
 import spark.Request;
 import spark.Response;
 
-public class APIEM extends APIBase {
+import java.util.ArrayList;
+
+public class PRS_API extends APIBase {
     private PRSDataServer db;
 
-    public APIEM(PRSDataServer db0) {
+    public PRS_API(PRSDataServer db0) {
         super(db0);
         db = db0;
         spark.Spark.post("/api/rating/group/add", apiAddGroupRating);
@@ -180,9 +182,15 @@ public class APIEM extends APIBase {
                 db.mongoDB.remove(ticket);
                 count++;
                 }
+            ArrayList<Entity> teachers = db.mongoDB.getAll(new SATeacher());    // Удалить разрешения на рейтинг
+            for(Entity ee : teachers){
+                SATeacher teacher = (SATeacher)ee;
+                if (teacher.getRatings().removeById(ratingId.getValue()))
+                    db.mongoDB.update(teacher);
+                }
             db.mongoDB.remove(rating);
             return new JEmpty();
-                }
+            }
         };
     //------------------------------------------------------------------------------------------------
     RouteWrap apiSetTakingForAll = new RouteWrap() {

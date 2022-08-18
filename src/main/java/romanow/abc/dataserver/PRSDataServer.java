@@ -13,14 +13,14 @@ import java.util.concurrent.TimeUnit;
 
 // AJAX посылает post, а браузер - get
 public class PRSDataServer extends DataServer {
-    public APIEM EMAPI = null;                       // API предметной области
+    public PRS_API EMAPI = null;                       // API предметной области
     public ErrorCounter deviceErrors = new ErrorCounter();  // Счетчик повторных ошибок
     protected boolean shutdown=false;                       // Признак завершения работы
     private OwnDateTime lastDay = new OwnDateTime(false);// Время для фиксации смены дня
     //--------------------------------------------------------------------------------------------------------------
     public PRSDataServer(){}
     //---------------------------------------------------------------------------------------------------------
-    public Pair<APIEM,String> startSecondClient(String ip, String port, String token) throws Exception {
+    public Pair<PRS_API,String> startSecondClient(String ip, String port, String token) throws Exception {
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .readTimeout(ValuesBase.HTTPTimeOut, TimeUnit.SECONDS)
                 .connectTimeout(ValuesBase.HTTPTimeOut, TimeUnit.SECONDS)
@@ -30,7 +30,7 @@ public class PRSDataServer extends DataServer {
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(okHttpClient)
                 .build();
-        APIEM service = (APIEM)retrofit.create(APIEM.class);
+        PRS_API service = (PRS_API)retrofit.create(PRS_API.class);
         return new Pair<>(service,token);
         }
     //----------------------------  Счетчик ошибок ПЛК ----------------------------------
@@ -59,7 +59,7 @@ public class PRSDataServer extends DataServer {
 
     @Override
     public void onStart() {
-        EMAPI = new APIEM(this);
+        EMAPI = new PRS_API(this);
         }
 
     @Override

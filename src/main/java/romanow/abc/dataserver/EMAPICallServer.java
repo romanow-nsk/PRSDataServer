@@ -11,7 +11,7 @@ import java.io.IOException;
 public abstract class EMAPICallServer<T> {
     public abstract Call<T> apiFun();
     public EMAPICallServer(){}
-    public T call(APIEM service)throws UniException {
+    public T call(PRS_API service)throws UniException {
         String mes;
         Response<T> res;
         long tt;
