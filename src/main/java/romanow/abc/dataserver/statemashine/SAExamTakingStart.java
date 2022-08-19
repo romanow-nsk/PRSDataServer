@@ -5,14 +5,14 @@ import romanow.abc.core.entity.StateEntity;
 import romanow.abc.core.entity.subjectarea.*;
 import romanow.abc.dataserver.DataServer;
 
-public class EMExamTakingStart implements I_ServerTransition {
+public class SAExamTakingStart implements I_ServerTransition {
     @Override
     public String onTransition(DataServer db, StateEntity entity) {
         SAExamTaking taking = (SAExamTaking) entity;
         try {
             SAExamTaking taking2 = new SAExamTaking();
             db.mongoDB().getById(taking2, taking.getOid(), 1);
-            for(SAStudRating rating : taking2.getRatings()){
+            for(SAExamRating rating : taking2.getRatings()){
                 if (rating.getState()== Values.StudRatingTakingSet){
                     rating.setState(Values.StudRatingConfirmation);
                     db.mongoDB().update(rating);

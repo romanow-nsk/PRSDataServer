@@ -7,10 +7,10 @@ import romanow.abc.dataserver.DataServer;
 
 import java.util.HashMap;
 
-public class EMStudRatingConfirmation implements I_ServerTransition {
+public class SAExamRatingConfirmation implements I_ServerTransition {
     @Override
     public String onTransition(DataServer db, StateEntity entity) {
-        SAStudRating rating = (SAStudRating) entity;
+        SAExamRating rating = (SAExamRating) entity;
         try {
             SAExamTaking taking = new SAExamTaking();
             if (!db.mongoDB().getById(taking, rating.getSAExamTaking().getOid())){
@@ -43,7 +43,7 @@ public class EMStudRatingConfirmation implements I_ServerTransition {
                 if (taskMap.get(task.getOid())!=null)
                     continue;
                 SAAnswer answer = new SAAnswer();
-                answer.getSAStudRating().setOid(rating.getOid());
+                answer.getSAExamRating().setOid(rating.getOid());
                 answer.getTask().setOid(task.getOid());
                 taskMap.put(task.getOid(),task.getOid());
                 long oid = db.mongoDB().add(answer);
@@ -61,7 +61,7 @@ public class EMStudRatingConfirmation implements I_ServerTransition {
                 if (taskMap.get(task.getOid())!=null)
                     continue;
                 SAAnswer answer = new SAAnswer();
-                answer.getSAStudRating().setOid(rating.getOid());
+                answer.getSAExamRating().setOid(rating.getOid());
                 answer.getTask().setOid(task.getOid());
                 taskMap.put(task.getOid(),task.getOid());
                 long oid = db.mongoDB().add(answer);

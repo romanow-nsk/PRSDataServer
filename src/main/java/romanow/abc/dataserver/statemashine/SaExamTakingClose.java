@@ -4,10 +4,10 @@ import romanow.abc.core.constants.Values;
 import romanow.abc.core.entity.StateEntity;
 import romanow.abc.core.entity.subjectarea.SAAnswer;
 import romanow.abc.core.entity.subjectarea.SAExamTaking;
-import romanow.abc.core.entity.subjectarea.SAStudRating;
+import romanow.abc.core.entity.subjectarea.SAExamRating;
 import romanow.abc.dataserver.DataServer;
 
-public class EMExamTakingClose implements I_ServerTransition{
+public class SaExamTakingClose implements I_ServerTransition{
     @Override
     public String onTransition(DataServer db, StateEntity entity) {
         try {
@@ -16,7 +16,7 @@ public class EMExamTakingClose implements I_ServerTransition{
             if (!db.mongoDB().getById(full,taking.getOid(),2)){
                 return "Ошибка чтения данных приема экзамена id="+taking.getTitle();
                 }
-            for(SAStudRating rating : full.getRatings()){
+            for(SAExamRating rating : full.getRatings()){
                 int stateStud = rating.getState();
                 if (stateStud == Values.StudRatingConfirmation){
                     rating.setState(Values.StudRatingNoConfirmation);

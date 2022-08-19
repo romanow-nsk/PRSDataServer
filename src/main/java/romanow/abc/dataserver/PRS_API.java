@@ -125,15 +125,21 @@ public class PRS_API extends APIBase {
             for (SAStudent student : group.getStudents()) {
                 if (student.getState() != Values.StudentStateNormal)
                     continue;
-                SAStudRating ticket = new SAStudRating();
-                ticket.setState(Values.StudRatingNotAllowed);
-                ticket.setExcerciceRating(0);
-                ticket.setSemesterRating(0);
-                ticket.setQuestionRating(0);
-                ticket.getStudent().setOid(student.getOid());
-                ticket.getSAGroupRating().setOid(oid);
+                SASemesterRating semesterRating = new SASemesterRating();
+                semesterRating.setState(Values.UndefinedType);
+                semesterRating.setSemesterRating(0);
+                semesterRating.getStudent().setOid(student.getOid());
+                semesterRating.getSAGroupRating().setOid(oid);
+                long semOid = db.mongoDB.add(semesterRating);
+                SAExamRating examRating = new SAExamRating();
+                examRating.setState(Values.StudRatingNotAllowed);
+                examRating.setExcerciceRating(0);
+                examRating.setQuestionRating(0);
+                examRating.getStudent().setOid(student.getOid());
+                examRating.getSAGroupRating().setOid(oid);
+                examRating.getSemRating().setOid(semOid);
+                db.mongoDB.add(examRating);
                 count++;
-                db.mongoDB.add(ticket);
                 }
             return new JLong(oid);
         }
@@ -167,7 +173,7 @@ public class PRS_API extends APIBase {
                 }
             EntityRefList<SAStudent> students = group.getStudents();
             students.createMap();
-            for (SAStudRating ticket : rating.getRatings()) {
+            for (SAExamRating ticket : rating.getExamRatings()) {
                 if (students.getById(ticket.getStudent().getOid()) == null)
                     continue;
                 if (!ticket.enableToRemove()) {
@@ -176,7 +182,7 @@ public class PRS_API extends APIBase {
                     }
                 }
             int count = 0;
-            for (SAStudRating ticket : rating.getRatings()) {
+            for (SAExamRating ticket : rating.getExamRatings()) {
                 if (students.getById(ticket.getStudent().getOid()) == null)
                     continue;
                 db.mongoDB.remove(ticket);
@@ -214,7 +220,7 @@ public class PRS_API extends APIBase {
                 if (taking.isOneGroup() && taking.getGroup().getOid()!=rating.getGroup().getOid())
                     continue;
                 db.mongoDB.getById(rating,rating.getOid(),1);
-                for(SAStudRating studRating : rating.getRatings())
+                for(SAExamRating studRating : rating.getExamRatings())
                     if (studRating.getState()==Values.StudRatingAllowed){
                         studRating.setState(Values.StudRatingTakingSet);
                         studRating.getSAExamTaking().setOid(taking.getOid());
@@ -243,7 +249,7 @@ public class PRS_API extends APIBase {
                 }
             EntityRefList<SAStudent> students = group.getStudents();
             students.createMap();
-            for (SAStudRating ticket : rating.getRatings()) {
+            for (SAExamRating ticket : rating.getExamRatings()) {
                 SAStudent student = students.getById(ticket.getStudent().getOid());
                 if (student == null) {
                     db.createHTTPError(res, ValuesBase.HTTPRequestError, "Студент id=" + ticket.getStudent().getOid() + " не найден");
@@ -265,7 +271,7 @@ public class PRS_API extends APIBase {
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Прием экзамена id=" + takingId.getValue() + " не найден");
                 return null;
                 }
-            for (SAStudRating ticket : examTaking.getRatings()) {
+            for (SAExamRating ticket : examTaking.getRatings()) {
                 SAStudent student = new SAStudent();
                 if (!db.mongoDB.getById(student,ticket.getStudent().getOid(),1))
                 if (student == null) {
