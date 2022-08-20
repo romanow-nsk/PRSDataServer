@@ -92,14 +92,14 @@ public class PRS_API extends APIBase {
             if (!groupRating.isValid()) return null;
             SAGroupRating rating = (SAGroupRating)groupRating.getValue();
             long groupId = rating.getGroup().getOid();
-            long ruleId = rating.getExamRule().getOid();
+            long ruleId = rating.getSemRule().getOid();
             long discId = rating.getSADiscipline().getOid();
             SAGroup group = new SAGroup();
             if (!db.mongoDB.getById(group,groupId,2)){
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Группа id=" + groupId + " не найдена");
                 return null;
                 }
-            SAExamRule rule = new SAExamRule();
+            SASemesterRule rule = new SASemesterRule();
             if (!db.mongoDB.getById(rule,ruleId)){
                 db.createHTTPError(res, ValuesBase.HTTPRequestError, "Регламент id=" + ruleId + " не найден");
                 return null;
@@ -114,10 +114,6 @@ public class PRS_API extends APIBase {
                     db.createHTTPError(res, ValuesBase.HTTPRequestError, "Повторное добавление рейтинга дисциплина-группа");
                     return null;
                     }
-                }
-            if (rule.getSADiscipline().getOid()!=discId){
-                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Регламент "+rule.getName()+" не от дисциплины " + discipline.getName());
-                return null;
                 }
             rating.setName(discipline.getName()+"-"+group.getName());
             long oid = db.mongoDB.add(rating);
