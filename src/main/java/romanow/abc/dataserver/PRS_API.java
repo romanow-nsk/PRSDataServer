@@ -12,6 +12,8 @@ import romanow.abc.core.entity.subjectarea.*;
 import romanow.abc.core.entity.subjectarea.statemashine.Transition;
 import romanow.abc.core.entity.subjectarea.statemashine.TransitionsFactory;
 import romanow.abc.core.mongo.RequestStatistic;
+import romanow.abc.core.reports.DocumentParamList;
+import romanow.abc.core.reports.GroupRatingReport;
 import romanow.abc.dataserver.statemashine.I_ServerTransition;
 import spark.Request;
 import spark.Response;
@@ -30,6 +32,7 @@ public class PRS_API extends APIBase {
         spark.Spark.get("/api/rating/taking/get", apiGetTakingRatings);
         spark.Spark.post("/api/state/change",apiStateChange);
         spark.Spark.post("/api/rating/takingforall", apiSetTakingForAll);
+        spark.Spark.get("/api/report/rating/group", apiCreateGroupReport);
         }
     RouteWrap apiStateChange = new RouteWrap() {
         @Override
@@ -138,8 +141,37 @@ public class PRS_API extends APIBase {
                 count++;
                 }
             return new JLong(oid);
-        }
-    };
+            }
+        };
+    //-------------------------------------------------------------------------------------------------
+    RouteWrap apiCreateGroupReport = new RouteWrap() {
+        @Override
+        public Object _handle(Request req, Response res, RequestStatistic statistic) throws Exception {
+            ParamLong ratingId = new ParamLong(req, res, "ratingId");
+            if (!ratingId.isValid()) return null;
+            SAGroupRating rating = new SAGroupRating();
+            if (!db.mongoDB.getById(rating, ratingId.getValue(), 2)) {
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Рейтинг группы  id=" + ratingId.getValue() + " не найден");
+                return null;
+                }
+            SAGroup group = new SAGroup();
+            if (!db.mongoDB.getById(group, rating.getGroup().getOid(), 2)) {
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Группа  id=" + rating.getGroup().getOid() + " не найдена");
+                return null;
+                }
+            rating.getGroup().setRef(group);
+            SADiscipline discipline = new SADiscipline();
+            if (!db.mongoDB.getById(discipline, rating.getSADiscipline().getOid(), 2)) {
+                db.createHTTPError(res, ValuesBase.HTTPRequestError, "Дисциплина  id=" + rating.getSADiscipline().getOid() + " не найдена");
+                return null;
+                }
+            rating.getSADiscipline().setRef(discipline);
+            ParamInt filetype = new ParamInt(req, res, "filetype");
+            if (!filetype.isValid()) return null;
+            GroupRatingReport report = new GroupRatingReport(rating);
+            return db.common.createReportArtifact(res,report, filetype.getValue()) ? report : null;
+            }
+        };
     //------------------------------------------------------------------------------------------------
     RouteWrap apiRemoveGroupRating = new RouteWrap() {
         @Override
