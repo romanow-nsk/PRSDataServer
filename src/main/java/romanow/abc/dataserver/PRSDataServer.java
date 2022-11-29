@@ -51,10 +51,7 @@ public class PRSDataServer extends DataServer {
 
     @Override
     public void onClock() {
-        WorkSettings ws;
-        try {
-            ws = (WorkSettings) common.getWorkSettings();
-            } catch (UniException e) { return; }
+        WorkSettings ws = (WorkSettings) common.getWorkSettings();
         }
 
     @Override
